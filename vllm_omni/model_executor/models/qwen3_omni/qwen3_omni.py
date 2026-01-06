@@ -1047,6 +1047,10 @@ class Qwen3OmniMoeForConditionalGeneration(
         if getattr(self, "model_stage", None) == "talker" and isinstance(logits, torch.Tensor):
             # suppress tokens by setting their probability to ~1e-9 (finite very small)
             suppressed_tokens = self._get_talker_suppressed_tokens()
+            # validate the temperature to ensure all positive for talker stage
+            temperature = sampling_metadata.temperature
+            if temperature is not None and torch.any(temperature <= 0):
+                raise ValueError("Temperature must be positive for talker stage.")
             try:
                 logits_cpu = logits.cpu()
                 logits_cpu[:, suppressed_tokens] = -1e9
